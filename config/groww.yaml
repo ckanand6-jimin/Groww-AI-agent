@@ -1,0 +1,30 @@
+# Groww product configuration — Weekly Review Pulse
+# Copy and fill placeholders before running against real services.
+
+product: groww
+display_name: Groww
+
+play_store:
+  # Groww package ID on Google Play (verify on Play Store listing)
+  app_id: "<groww_package_id>"
+
+review_window_weeks: 10
+
+analysis:
+  max_themes: 5
+  embedding_model: BAAI/bge-small-en-v1.5
+  llm_model: gpt-4o-mini
+  max_tokens_per_run: 80000
+
+delivery:
+  google_doc:
+    document_id: "1srRnz0TTVoNgSil62PsWU8Vl7hbXxxHf746f0V8YfF8"
+    document_title: "Weekly Review Pulse — Groww"
+  email:
+    stakeholders:
+      - ck.anand6@gmail.com
+    default_mode: draft  # draft | send | skip
+
+schedule:
+  timezone: Asia/Kolkata
+  cron: "0 6 * * 1"  # Monday 06:00 IST
