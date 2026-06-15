@@ -59,8 +59,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./mcp-servers/play-store-reviews
-          pip install -e ./pulse-agent
+          pip install -e .
 
       - name: Determine ISO week
         id: week
