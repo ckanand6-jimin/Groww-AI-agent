@@ -77,7 +77,7 @@ def default_config_path() -> Path:
         return Path(override)
 
     # pulse-agent/src/pulse/config.py -> repo root is three parents up from pulse/
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[2]
     return repo_root / "config" / "groww.yaml"
 
 
