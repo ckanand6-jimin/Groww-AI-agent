@@ -248,10 +248,11 @@ def _summarize_cluster(
                 action_ideas=action_ideas,
             ), prompt_tokens_total, completion_tokens_total
 
-        except (ValueError, Exception) as exc:
-            logger.warning(
-                "Cluster #%d, attempt %d: LLM call failed — %s",
-                rank, attempt + 1, exc,
+        except Exception as exc:
+            logger.exception(
+                "Cluster #%d, attempt %d failed",
+                rank,
+                attempt + 1,
             )
             if attempt < MAX_QUOTE_RETRIES:
                 time.sleep(2)
