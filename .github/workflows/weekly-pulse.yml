@@ -73,8 +73,10 @@ jobs:
 
       - name: Run Pulse pipeline
         env:
+          env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          PULSE_MCP_SERVER_URL: ${{ secrets.PULSE_MCP_SERVER_URL }}
           PULSE_PRODUCT: ${{ inputs.product || 'groww' }}
           PULSE_EMAIL_MODE: ${{ inputs.email_mode || 'draft' }}
         run: |
