@@ -6,7 +6,7 @@ display_name: Groww
 
 play_store:
   # Groww package ID on Google Play (verify on Play Store listing)
-  app_id: "<com.nextbillion.groww>"
+  app_id: "com.nextbillion.groww"
 
 review_window_weeks: 10
 
