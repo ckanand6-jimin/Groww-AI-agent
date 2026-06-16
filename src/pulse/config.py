@@ -71,13 +71,21 @@ class ProductConfig(BaseModel):
 
 
 def default_config_path() -> Path:
-    """Resolve config/groww.yaml relative to the repository root."""
+    """Resolve config/groww.yaml relative to the repository root.
+
+    Respects ``PULSE_CONFIG_PATH`` env var for an explicit override,
+    or ``PULSE_DATA_DIR`` for the base data directory.
+    """
     override = os.environ.get("PULSE_CONFIG_PATH")
     if override:
         return Path(override)
 
-    # pulse-agent/src/pulse/config.py -> repo root is three parents up from pulse/
-    repo_root = Path(__file__).resolve().parents[2]
+    # __file__ = .../pulse-agent/src/pulse/config.py
+    # parents[0] = .../pulse-agent/src/pulse/
+    # parents[1] = .../pulse-agent/src/
+    # parents[2] = .../pulse-agent/
+    # parents[3] = repo root
+    repo_root = Path(__file__).resolve().parents[3]
     return repo_root / "config" / "groww.yaml"
 
 

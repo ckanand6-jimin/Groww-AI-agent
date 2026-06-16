@@ -10,6 +10,7 @@ renamed to ``run.json``, preventing corruption from interrupted I/O.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -26,7 +27,11 @@ def _default_runs_dir() -> Path:
     """Resolve ``data/runs/`` relative to the repository root.
 
     Path: ``pulse-agent/src/pulse/audit/ledger.py`` -> 4 parents up = repo root.
+    Falls back to ``PULSE_DATA_DIR`` env var if set.
     """
+    override = os.environ.get("PULSE_DATA_DIR")
+    if override:
+        return Path(override) / "runs"
     return Path(__file__).resolve().parents[4] / "data" / "runs"
 
 

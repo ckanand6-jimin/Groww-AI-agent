@@ -25,6 +25,10 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.4",
 ]
+fetch = [
+    "google-play-scraper>=1.2",
+    "emoji>=2.0",
+]
 
 [project.scripts]
 pulse = "pulse.cli:main"

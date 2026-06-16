@@ -14,6 +14,7 @@ into a single idempotent run with:
 from __future__ import annotations
 
 import logging
+import os
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -22,7 +23,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from pulse.audit.ledger import Ledger
 from pulse.audit.lock import LockError, RunLock
-from pulse.config import ProductConfig, load_product_config, get_date_window_from_iso_week
+from pulse.config import ProductConfig, load_product_config, get_date_window_from_iso_week, validate_runtime_config
 from pulse.models.models import (
     AnalysisRecord,
     DeliveryRecord,
@@ -96,9 +97,17 @@ def _resolve_cache_dir(product: str, iso_week: str) -> str:
     """Resolve the review cache directory for a given (product, iso_week).
 
     Convention: ``data/cache/{product}/{end_date_iso}/``
+
+    Respects ``PULSE_DATA_DIR`` env var for overriding the base data directory
+    (useful in CI where the CWD may differ from the repo root).
     """
     _, end_date = get_date_window_from_iso_week(iso_week, window_weeks=10)
     end_date_str = end_date.strftime("%Y-%m-%d")
+
+    data_dir = os.environ.get("PULSE_DATA_DIR")
+    if data_dir:
+        return os.path.join(data_dir, "cache", product, end_date_str)
+
     # Repo root: 3 levels up from pulse-agent/src/pulse/
     repo_root = Path(__file__).resolve().parents[3]
     return str(repo_root / "data" / "cache" / product / end_date_str)
@@ -149,6 +158,14 @@ async def run_pipeline(
     # --- Resolve parameters ---
     resolved_week = iso_week or _current_iso_week()
     cfg = config or load_product_config()
+
+    # --- Runtime config validation (catches placeholders before pipeline starts) ---
+    config_errors = validate_runtime_config(cfg)
+    if config_errors:
+        raise OrchestrationError(
+            stage="config",
+            message="; ".join(config_errors),
+        )
 
     ledger = Ledger(base_dir=ledger_base_dir)
     run_dir = ledger.run_dir(product, resolved_week)
@@ -350,14 +367,27 @@ def _run_ingest(
     fn: Optional[IngestFn],
 ) -> Tuple[List, Dict[str, Any]]:
     """Execute the ingest stage."""
+    cache_dir = _resolve_cache_dir(product, iso_week)
+
     if fn:
-        cache_dir = _resolve_cache_dir(product, iso_week)
         return fn(cache_dir, iso_week, product)
 
     from pulse.ingest.adapter import ingest_from_cache
 
-    cache_dir = _resolve_cache_dir(product, iso_week)
-    return ingest_from_cache(cache_dir, iso_week, product)
+    # Compute date window for auto-fetch when cache is missing (CI / first run)
+    start_date_dt, end_date_dt = get_date_window_from_iso_week(
+        iso_week, cfg.review_window_weeks,
+    )
+
+    return ingest_from_cache(
+        cache_dir,
+        iso_week,
+        product,
+        auto_fetch=True,
+        app_id=cfg.play_store.app_id,
+        start_date=start_date_dt,
+        end_date=end_date_dt,
+    )
 
 
 def _run_analyze(
