@@ -85,7 +85,7 @@ def default_config_path() -> Path:
     # parents[1] = .../pulse-agent/src/
     # parents[2] = .../pulse-agent/
     # parents[3] = repo root
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[2]
     return repo_root / "config" / "groww.yaml"
 
 
