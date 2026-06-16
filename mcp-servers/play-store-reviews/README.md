@@ -1,0 +1,26 @@
+# Play Store Reviews MCP Server
+
+MCP server that fetches and exposes Google Play Store reviews for the Weekly Review Pulse pipeline.
+
+**Status:** Phase 0 scaffold — tool implementation begins in Phase 1.
+
+## Tools (planned)
+
+| Tool | Description |
+|------|-------------|
+| `fetch_reviews` | Fetch reviews for an app within a date window |
+| `get_app_metadata` | Return app name and package metadata |
+| `health_check` | Server and cache status |
+
+See [architecture.md](../../architecture.md#51-play-store-reviews-mcp-in-repo) for schemas.
+
+## Local development
+
+```bash
+pip install -e ".[dev]"
+python -m play_store_reviews.server
+```
+
+## MCP host configuration
+
+Registered in `config/mcp-servers.json` at the repo root.
