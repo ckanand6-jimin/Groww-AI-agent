@@ -6,6 +6,7 @@ Commands:
   pulse status    Print RunRecord for a product/week.
   pulse dry-run   Run pipeline locally without delivery.
   pulse render    Render a PulseReport JSON into preview files.
+  pulse export-frontend  Write run data as static JSON for the frontend.
   pulse version   Print version and exit.
 
 Exit codes:
@@ -245,6 +246,65 @@ def _cmd_render(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_export_frontend(args: argparse.Namespace) -> int:
+    """Handle 'pulse export-frontend' — write run data to frontend/public/data/."""
+    from pulse.audit.ledger import Ledger
+    from pulse.models.models import PulseReport
+
+    product = args.product
+    ledger = Ledger()
+    records = ledger.query(product)
+
+    if not records:
+        print(f"No runs found for product '{product}'.")
+        return EXIT_OK
+
+    # Resolve output directory
+    repo_root = Path(__file__).resolve().parents[3]
+    frontend_data = Path(args.output_dir) if args.output_dir else (
+        repo_root / "frontend" / "public" / "data"
+    )
+    runs_dir = frontend_data / "runs"
+    reports_dir = frontend_data / "reports"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write runs-index.json (array of all RunRecords, newest first)
+    runs_list = [json.loads(r.model_dump_json()) for r in records]
+    index_path = frontend_data / "runs-index.json"
+    with open(index_path, "w", encoding="utf-8") as f:
+        json.dump(runs_list, f, indent=2, ensure_ascii=False)
+    print(f"  runs-index.json: {len(runs_list)} runs")
+
+    # Write individual run files
+    for record in records:
+        run_path = runs_dir / f"{record.iso_week}.json"
+        with open(run_path, "w", encoding="utf-8") as f:
+            f.write(record.model_dump_json(indent=2))
+
+    # Try to load reports from the render stage preview files
+    report_count = 0
+    preview_dir = repo_root / "data" / "preview"
+    fixture_path = repo_root / "data" / "fixture_report.json"
+
+    # Check if fixture report exists and use it for the latest completed run
+    if fixture_path.is_file():
+        with open(fixture_path, "r", encoding="utf-8") as f:
+            report_data = json.load(f)
+        # Write to the week matching the report's iso_week
+        iso_week = report_data.get("iso_week", "")
+        if iso_week:
+            report_path = reports_dir / f"{iso_week}.json"
+            with open(report_path, "w", encoding="utf-8") as f:
+                json.dump(report_data, f, indent=2, ensure_ascii=False)
+            report_count += 1
+
+    print(f"  runs/: {len(records)} files")
+    print(f"  reports/: {report_count} files")
+    print(f"Output: {frontend_data}")
+    return EXIT_OK
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -374,6 +434,22 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Comma-separated email recipients (optional)",
     )
 
+    # --- pulse export-frontend ---
+    export_parser = subparsers.add_parser(
+        "export-frontend",
+        help="Write run data as static JSON for the frontend dashboard",
+    )
+    export_parser.add_argument(
+        "--product", "-p",
+        default="groww",
+        help="Product identifier (default: groww)",
+    )
+    export_parser.add_argument(
+        "--output-dir", "-o",
+        default=None,
+        help="Output directory (default: frontend/public/data/)",
+    )
+
     return parser
 
 
@@ -399,6 +475,7 @@ def main(argv: list[str] | None = None) -> None:
         "status": _cmd_status,
         "dry-run": _cmd_dry_run,
         "render": _cmd_render,
+        "export-frontend": _cmd_export_frontend,
     }
 
     handler = dispatch.get(args.command)
