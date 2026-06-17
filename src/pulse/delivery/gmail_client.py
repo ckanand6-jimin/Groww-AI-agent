@@ -67,11 +67,13 @@ class GmailClient:
         email = build_email_payload(report, recipients=recipients, doc_url=doc_url)
 
         # --- Transform to MCP request shape ---
-        # API contract: "to" is a single string, "body" is the HTML content
+        # The MCP server distinguishes HTML from plain text via field name.
+        # "body_html" signals that the content should be sent as text/html.
         payload = {
             "to": email["recipients"][0] if email["recipients"] else "",
             "subject": email["subject"],
-            "body": email["body_html"],
+            "body_html": email["body_html"],
+            "body_text": email["body_text"],
         }
 
         response = await self._http.call_tool("create_email_draft", payload)

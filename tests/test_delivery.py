@@ -274,16 +274,12 @@ class TestDocsClient:
         # --- Assertions on the payload ---
         assert captured_payload["doc_id"] == "1AbCdEfGhIj"
         assert "content" in captured_payload
-        # content is a JSON string (the batch-update requests serialised)
-        batch = json.loads(captured_payload["content"])
-        assert "requests" in batch
-        assert len(batch["requests"]) > 0
-
-        # First request must be insertText
-        first_req = batch["requests"][0]
-        assert "insertText" in first_req
-        assert "Groww" in first_req["insertText"]["text"]
-        assert "2026-W23" in first_req["insertText"]["text"]
+        # content is now plain text (not JSON batch-update requests)
+        content = captured_payload["content"]
+        assert isinstance(content, str)
+        assert "Groww" in content
+        assert "2026-W23" in content
+        assert "Top themes" in content
 
         # --- Assertions on the result ---
         assert result.document_id == "1AbCdEfGhIj"
@@ -320,9 +316,8 @@ class TestDocsClient:
         http = McpHttpClient(base_url="https://mcp.example.com")
 
         async def fake_call(endpoint, payload):
-            # content is a JSON string — parse it to inspect the batch
-            batch = json.loads(payload["content"])
-            text = batch["requests"][0]["insertText"]["text"]
+            # content is now plain text — inspect it directly
+            text = payload["content"]
             return {
                 "status": "success",
                 "result": {
@@ -384,8 +379,9 @@ class TestGmailClient:
         assert captured_payload["to"] == "product@example.com"
         assert "Groww Weekly Review Pulse" in captured_payload["subject"]
         assert "2026-W23" in captured_payload["subject"]
-        assert "<!DOCTYPE html>" in captured_payload["body"]
-        assert "Groww" in captured_payload["body"]
+        assert "<!DOCTYPE html>" in captured_payload["body_html"]
+        assert "Groww" in captured_payload["body_html"]
+        assert "body_text" in captured_payload
 
         # --- Assertions on the result ---
         assert result.message_id == "msg-001"
@@ -613,8 +609,8 @@ class TestDeliver:
 
         doc_id = product_config.delivery.google_doc.document_id
         expected_url = f"https://docs.google.com/document/d/{doc_id}/edit"
-        assert expected_url in captured_email_payload["body"]
-        assert "Read full report" in captured_email_payload["body"]
+        assert expected_url in captured_email_payload["body_html"]
+        assert "Read full report" in captured_email_payload["body_html"]
 
 
 # ===========================================================================

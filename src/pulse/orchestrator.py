@@ -239,6 +239,8 @@ async def _execute_pipeline(
     clusters = None
     report = None
     rendered = None
+    ingest_stats: Dict[str, Any] = {}
+    analyze_stats: Dict[str, Any] = {}
 
     for stage in PIPELINE_STAGES:
         # NOTE: We always re-run all stages (even on resume).  Computation
@@ -278,6 +280,8 @@ async def _execute_pipeline(
             elif stage == "summarize":
                 report, token_usage = _run_summarize(
                     clusters, iso_week, cfg, summarize_fn,
+                    ingest_stats=ingest_stats,
+                    analyze_stats=analyze_stats,
                 )
                 if record.analysis:
                     record.analysis.token_usage = token_usage
@@ -415,6 +419,9 @@ def _run_summarize(
     iso_week: str,
     cfg: ProductConfig,
     fn: Optional[SummarizeFn],
+    *,
+    ingest_stats: Optional[Dict[str, Any]] = None,
+    analyze_stats: Optional[Dict[str, Any]] = None,
 ) -> Tuple[PulseReport, Dict[str, int]]:
     """Execute the summarize stage."""
     if not clusters:
@@ -429,6 +436,10 @@ def _run_summarize(
 
     from pulse.summarize import summarize
 
+    # Propagate stats from earlier stages so the report displays real counts.
+    ingest_stats = ingest_stats or {}
+    analyze_stats = analyze_stats or {}
+
     return summarize(
         clusters,
         model=cfg.analysis.llm_model,
@@ -437,6 +448,12 @@ def _run_summarize(
         start_date=start_date_dt.strftime("%Y-%m-%d"),
         end_date=end_date_dt.strftime("%Y-%m-%d"),
         window_weeks=cfg.review_window_weeks,
+        total_reviews_fetched=ingest_stats.get("fetched", 0),
+        reviews_after_dedupe=ingest_stats.get("final_count", 0),
+        reviews_clustered=analyze_stats.get("reviews_clustered", 0)
+            or ingest_stats.get("final_count", 0),
+        clusters_found=analyze_stats.get("clusters_found", 0)
+            or analyze_stats.get("total_clusters", 0),
     )
 
 
