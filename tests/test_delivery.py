@@ -379,9 +379,10 @@ class TestGmailClient:
         assert captured_payload["to"] == "product@example.com"
         assert "Groww Weekly Review Pulse" in captured_payload["subject"]
         assert "2026-W23" in captured_payload["subject"]
-        assert "<!DOCTYPE html>" in captured_payload["body_html"]
-        assert "Groww" in captured_payload["body_html"]
-        assert "body_text" in captured_payload
+        assert "<!DOCTYPE html>" in captured_payload["body"]
+        assert "Groww" in captured_payload["body"]
+        assert "body_text" not in captured_payload
+        assert "body_html" not in captured_payload
 
         # --- Assertions on the result ---
         assert result.message_id == "msg-001"
@@ -609,8 +610,8 @@ class TestDeliver:
 
         doc_id = product_config.delivery.google_doc.document_id
         expected_url = f"https://docs.google.com/document/d/{doc_id}/edit"
-        assert expected_url in captured_email_payload["body_html"]
-        assert "Read full report" in captured_email_payload["body_html"]
+        assert expected_url in captured_email_payload["body"]
+        assert "Read full report" in captured_email_payload["body"]
 
 
 # ===========================================================================
