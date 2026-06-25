@@ -1,0 +1,2 @@
+[console_scripts]
+play-store-reviews-mcp = play_store_reviews.server:main
